@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGRILEC Bénin - Menu Digital</title>
+    
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/180?text=Agrilec">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .active-tab { border-bottom: 4px solid #ea580c; color: #ea580c; font-weight: 800; }
+        .hidden { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        [contenteditable="true"] { border: 2px dashed #ef4444; padding: 4px; border-radius: 8px; background: #fff1f1; outline: none; }
+        .menu-card { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .img-box { background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 112px; }
+        img[src=""], img:not([src]) { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans" onload="initApp()">
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl pb-24 relative">
+        
+        <header class="bg-green-800 text-white p-6 text-center shadow-lg relative">
+            <h1 class="text-2xl font-bold tracking-tighter uppercase">Agrilec Bénin</h1>
+            <p class="text-[10px] tracking-widest opacity-80 uppercase">Saveurs & Nature</p>
+            <button onclick="askAdminCode()" class="absolute top-4 right-4 opacity-40 hover:opacity-100 text-xl">🔒</button>
+        </header>
+
+        <div id="admin-bar" class="hidden bg-red-700 text-white sticky top-0 z-50 shadow-md p-3">
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-[10px] font-bold uppercase tracking-widest">🛠 MODE ÉDITION</span>
+                <button onclick="saveAllChanges()" class="bg-white text-red-700 px-5 py-1 rounded-full text-[10px] font-black shadow-xl uppercase">Sauvegarder</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="addNewItem()" class="flex-1 bg-green-600 text-white text-[10px] py-1.5 rounded-lg font-bold shadow">+ AJOUTER UN PLAT</button>
+                <button onclick="resetApp()" class="bg-black/30 text-[9px] px-3 py-1.5 rounded-lg">RAZ</button>
+            </div>
+        </div>
+
+        <div id="view-home" class="p-6 space-y-6">
+            <div class="text-center py-4">
+                <h2 class="text-xl font-extrabold text-gray-800">Bienvenue !</h2>
+                <p class="text-gray-500 text-sm italic mt-1">Qualité & Fraîcheur</p>
+            </div>
+            <button onclick="showRestaurant()" class="w-full bg-orange-500 text-white p-12 rounded-3xl text-2xl font-black shadow-xl border-b-8 border-orange-700 active:translate-y-1 active:border-b-4 transition-all uppercase">🍴 Restaurant</button>
+            <button onclick="showMarche()" class="w-full bg-green-600 text-white p-12 rounded-3xl text-2xl font-black shadow-xl border-b-8 border-green-800 active:translate-y-1 active:border-b-4 transition-all uppercase">🍎 Le Marché</button>
+        </div>
+
+        <div id="view-restaurant" class="hidden">
+            <div class="flex items-center p-4 bg-white sticky top-0 z-20 shadow-sm border-b">
+                <button onclick="goHome()" class="text-2xl mr-4">🏠</button>
+                <div class="flex overflow-x-auto no-scrollbar space-x-6">
+                    <button onclick="renderCat('entrees')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Entrées</button>
+                    <button onclick="renderCat('terre')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Terre</button>
+                    <button onclick="renderCat('mer')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Mer</button>
+                    <button onclick="renderCat('sauces')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Sauces</button>
+                    <button onclick="renderCat('fastfood')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Fast Food</button>
+                    <button onclick="renderCat('boissons')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Boissons</button>
+                    <button onclick="renderCat('reservations')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Spécial</button>
+                </div>
+            </div>
+            <div id="restaurant-items" class="p-4 space-y-4"></div>
+        </div>
+
+        <div id="view-marche" class="hidden">
+            <div class="flex items-center p-4 bg-white sticky top-0 z-20 shadow-sm border-b">
+                <button onclick="goHome()" class="text-2xl mr-4">🏠</button>
+                <h2 class="font-bold text-green-800 text-sm uppercase">Marché de Fruits</h2>
+            </div>
+            <div id="marche-items" class="p-4 space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let isAdmin = false;
+        let currentCategory = 'entrees';
+        
+        let menuData = {
+            entrees: [
+                { id: 'e1', name: 'Salade AGRILEC', price: '3000 FCFA', desc: 'Œuf de caille, carotte, avocat, jambon, olive' },
+                { id: 'e2', name: 'Salade Paysanne', price: '1500 FCFA', desc: 'Fromage peulh, légumes frais, œuf dur' },
+                { id: 'e3', name: 'Salade Maison', price: '2000 FCFA', desc: 'Poulet, betterave, œuf dur, légumes' },
+                { id: 'e4', name: 'Salade Russe', price: '1500 FCFA', desc: 'Mayonnaise, carotte, concombre, œuf' },
+                { id: 'e5', name: 'Omelette aux petits légumes', price: '1000 FCFA', desc: 'L\'Éveil des Sens' }
+            ],
+            terre: [
+                { id: 't1', name: 'Riz Parfumée au Lapin', price: '3500 FCFA', desc: 'Assaisonné avec son jus de cuisson' },
+                { id: 't2', name: 'Brochettes de Boeuf + Frites', price: '2000 FCFA', desc: 'Sauce AGRI spéciale' },
+                { id: 't3', name: 'Bomiwo Poulet Bicyclette', price: '2500 FCFA', desc: 'Spécialité du Terroir' },
+                { id: 't4', name: 'Spaghetti Légumes & Boeuf', price: '2000 FCFA', desc: 'Viande de boeuf tendre' },
+                { id: 't5', name: 'Spaghetti Omelette Alloco', price: '1500 FCFA', desc: 'Le classique gourmand' },
+                { id: 't6', name: 'Pomme Sauté Sauce Basquaise', price: '2500 FCFA', desc: 'Poulet tendrement mijoté' },
+                { id: 't7', name: 'AMIWO Aileron', price: '2000 FCFA', desc: 'Tradition et goût' },
+                { id: 't8', name: 'PIRON ROUGE Aileron', price: '2000 FCFA', desc: 'Délice local au piment' },
+                { id: 't9', name: 'ATASSI Poisson', price: '1500 FCFA', desc: 'Riz et haricot traditionnel' }
+            ],
+            mer: [
+                { id: 'm1', name: 'Le Tchep Dorade', price: '3500 FCFA', desc: 'Poisson de mer dorade royale' },
+                { id: 'm2', name: 'Atiéké Tilapia Braisé', price: '3000 FCFA', desc: 'Poisson frais braisé' },
+                { id: 'm3', name: 'Riz Blanc Poisson Braisé', price: '3500 FCFA', desc: 'Cuit au four avec épices' }
+            ],
+            sauces: [
+                { id: 's1', name: 'Couscous Sauce Légumes', price: '2500 FCFA', desc: 'Au poulet (cuisse)' },
+                { id: 's2', name: 'Sauce Arachide au Mouton', price: '3000 FCFA', desc: 'Crincrin ou légumes' },
+                { id: 's3', name: 'Sauce Gboman Complète', price: '2500 FCFA', desc: 'Poisson, crabe, kpanman, fromage' },
+                { id: 's4', name: 'Tilapia Frais au Crincrin', price: '2500 FCFA', desc: 'Sauce tomate onctueuse' }
+            ],
+            fastfood: [
+                { id: 'f1', name: 'Pizza Agrilec', price: '4000 FCFA', desc: 'Jambon, mozza, basilic (Sur commande)' },
+                { id: 'f2', name: 'Hamburger Agrilec', price: '3000 FCFA', desc: 'Bœuf grillé et frites fraîches' },
+                { id: 'f3', name: 'Mardi Shawarma', price: '1500 FCFA', desc: 'Offre spéciale le mardi' },
+                { id: 'f4', name: 'Glaces 02 boules', price: '1500 FCFA', desc: 'Vanille ou Chocolat' }
+            ],
+            boissons: [
+                { id: 'b1', name: 'Jus Naturels Signatures', price: '1500 FCFA', desc: 'Orange, Mangue, Corossol, Passion' },
+                { id: 'b2', name: 'Café / Thé / Infusion', price: '700 FCFA', desc: 'Miel, Citronnelle, Menthe' },
+                { id: 'b3', name: 'Bières & Sucreries', price: '700 FCFA', desc: 'Castel, Flag, Doppel' }
+            ],
+            reservations: [
+                { id: 'r1', name: 'Poulet Yassa', price: '3000 FCFA', desc: 'Sur réservation 24h' },
+                { id: 'r2', name: 'Assrokouin Complet', price: '2500 FCFA', desc: 'Peau bœuf, poisson, crabe' }
+            ],
+            marche: [
+                { id: 'ma1', name: 'Mangues Séchées AGRILEC', price: '1000 FCFA', desc: 'Sachet 100% Naturel' },
+                { id: 'ma2', name: 'Ananas Pain de Sucre', price: '500 FCFA', desc: 'L\'unité' }
+            ]
+        };
+
+        function initApp() {
+            const savedData = localStorage.getItem('agrilec_final_db_v5');
+            if(savedData) menuData = JSON.parse(savedData);
+            renderCat('entrees');
+        }
+
+        function askAdminCode() {
+            if(prompt("CODE ADMIN AGRILEC :") === "AGRILECBJ") {
+                isAdmin = true;
+                document.getElementById('admin-bar').classList.remove('hidden');
+                refreshView();
+            }
+        }
+
+        function renderCat(cat) {
+            currentCategory = cat;
+            const container = document.getElementById('restaurant-items');
+            container.innerHTML = '';
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.remove('active-tab');
+                if(t.innerText.toLowerCase().includes(cat.substring(0,3))) t.classList.add('active-tab');
+            });
+            menuData[cat].forEach(item => container.innerHTML += createCard(item, cat));
+        }
+
+        function createCard(item, cat) {
+            const savedImg = localStorage.getItem('img_' + item.id);
+            const fallbackEmoji = cat === 'marche' ? '🍎' : '🍴';
+
+            return `
+                <div class="flex bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm menu-card relative">
+                    <div class="w-1/3 h-28 img-box relative overflow-hidden">
+                        ${savedImg ? 
+                            `<img src="${savedImg}" id="img_${item.id}" class="w-full h-full object-cover">` : 
+                            `<span class="text-3xl opacity-20">${fallbackEmoji}</span>`
+                        }
+                        ${isAdmin ? `<label class="absolute inset-0 bg-black/50 text-white text-[8px] flex items-center justify-center cursor-pointer font-bold uppercase p-2 text-center">Changer Photo<input type="file" class="hidden" onchange="processImg(event, '${item.id}')"></label>` : ''}
+                    </div>
+                    <div class="w-2/3 p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm leading-tight" ${isAdmin ? `contenteditable="true" onblur="updateVal('${cat}','${item.id}','name',this.innerText)"` : ''}>${item.name}</h3>
+                            <p class="text-[9px] text-gray-400 mt-1" ${isAdmin ? `contenteditable="true" onblur="updateVal('${cat}','${item.id}','desc',this.innerText)"` : ''}>${item.desc}</p>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <span class="text-orange-600 font-black text-xs" ${isAdmin ? `contenteditable="true" onblur="updateVal('${cat}','${item.id}','price',this.innerText)"` : ''}>${item.price}</span>
+                            <button onclick="order('${item.name}')" class="bg-green-700 text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-sm">Commander</button>
+                        </div>
+                    </div>
+                    ${isAdmin ? `<button onclick="deleteItem('${cat}','${item.id}')" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow-lg">×</button>` : ''}
+                </div>`;
+        }
+
+        function updateVal(cat, id, field, val) {
+            const item = menuData[cat].find(i => i.id === id);
+            if(item) item[field] = val;
+        }
+
+        function addNewItem() {
+            const cat = (!document.getElementById('view-marche').classList.contains('hidden')) ? 'marche' : currentCategory;
+            const newId = 'item_' + Date.now();
+            menuData[cat].unshift({ id: newId, name: 'NOUVEAU PRODUIT', price: '0 FCFA', desc: 'DESCRIPTION' });
+            refreshView();
+        }
+
+        function deleteItem(cat, id) {
+            if(confirm("Supprimer cet article ?")) {
+                menuData[cat] = menuData[cat].filter(i => i.id !== id);
+                localStorage.removeItem('img_' + id);
+                refreshView();
+            }
+        }
+
+        function processImg(e, id) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = 400;
+                    let w = img.width, h = img.height;
+                    if (w > h) { if (w > size) { h *= size / w; w = size; } }
+                    else { if (h > size) { w *= size / h; h = size; } }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6); 
+                    localStorage.setItem('img_' + id, compressed);
+                    refreshView();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveAllChanges() {
+            localStorage.setItem('agrilec_final_db_v5', JSON.stringify(menuData));
+            alert("✅ Menu enregistré !");
+            isAdmin = false;
+            document.getElementById('admin-bar').classList.add('hidden');
+            location.reload();
+        }
+
+        function refreshView() {
+            if(!document.getElementById('view-marche').classList.contains('hidden')) renderMarche();
+            else renderCat(currentCategory);
+        }
+
+        function showRestaurant() { 
+            document.getElementById('view-home').classList.add('hidden'); 
+            document.getElementById('view-restaurant').classList.remove('hidden'); 
+            renderCat(currentCategory); 
+        }
+
+        function showMarche() { 
+            document.getElementById('view-home').classList.add('hidden'); 
+            document.getElementById('view-marche').classList.remove('hidden'); 
+            renderMarche(); 
+        }
+
+        function renderMarche() {
+            const container = document.getElementById('marche-items');
+            container.innerHTML = '';
+            menuData.marche.forEach(item => container.innerHTML += createCard(item, 'marche'));
+        }
+
+        function goHome() { location.reload(); }
+        function resetApp() { if(confirm("Effacer vos photos et changements ?")) { localStorage.clear(); location.reload(); } }
+        function order(n) { window.location.href = "https://wa.me/22944070883?text=" + encodeURIComponent("Bonjour AGRILEC, je souhaite commander : " + n); }
+    </script>
+</body>
+</html>
