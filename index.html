@@ -3,98 +3,313 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AGRILEC Bénin - Menu Digital</title>
+    <title>AGRILEC BENIN - Super App</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        .active-tab { border-bottom: 4px solid #ea580c; color: #ea580c; font-weight: 800; }
-        .hidden { display: none; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #fbf9f7; color: #1a1a1a; scroll-behavior: smooth; overflow-x: hidden; }
+        .glass-card { background: white; border-radius: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); }
+        
+        /* Carrousels */
+        .carousel-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding: 10px 20px; scrollbar-width: none; scroll-behavior: smooth; }
+        .carousel-container::-webkit-scrollbar { display: none; }
+        .carousel-item { min-width: 85%; scroll-snap-align: start; border-radius: 24px; padding: 20px; color: white; position: relative; overflow: hidden; height: 160px; flex-shrink: 0; }
+        
+        /* Menu Catégories Sticky */
+        .sticky-cats { position: sticky; top: 0; z-index: 40; background: rgba(251, 249, 247, 0.95); backdrop-filter: blur(12px); padding: 15px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .cat-bubble { flex: 0 0 auto; width: 75px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+        .cat-icon { width: 58px; height: 58px; background: white; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: 0.3s; font-size: 24px; }
+        .active-cat .cat-icon { background: #16a34a; color: white; transform: scale(1.1); box-shadow: 0 8px 20px rgba(22, 163, 74, 0.2); }
+        .active-cat span { color: #16a34a; font-weight: 800; }
+
+        /* Panier Flottant */
+        #cart-floating { position: fixed; bottom: 30px; left: 20px; right: 20px; background: #1a1a1a; color: white; padding: 16px; border-radius: 24px; display: flex; justify-content: space-between; align-items: center; transform: translateY(200%); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; }
+        #cart-floating.show { transform: translateY(0); }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .menu-card { animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .img-box { background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 112px; }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+
+        /* Styles Réseaux Sociaux */
+        .social-btn { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 18px; transition: 0.3s; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .social-btn:active { transform: scale(0.9); }
     </style>
 </head>
-<body class="bg-gray-100 font-sans" onload="initApp()">
-    <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl pb-24 relative">
+<body class="pb-24">
+
+    <div class="max-w-md mx-auto min-h-screen relative">
         
-        <header class="bg-green-800 text-white p-6 text-center shadow-lg">
-            <h1 class="text-2xl font-bold tracking-tighter uppercase">Agrilec Bénin</h1>
-            <p class="text-[10px] tracking-widest opacity-80 uppercase">Saveurs & Nature</p>
-        </header>
-
-        <div id="view-home" class="p-6 space-y-6">
-            <button onclick="showRestaurant()" class="w-full bg-orange-500 text-white p-12 rounded-3xl text-2xl font-black shadow-xl border-b-8 border-orange-700 active:translate-y-1 transition-all uppercase">🍴 Restaurant</button>
-            <button onclick="showMarche()" class="w-full bg-green-600 text-white p-12 rounded-3xl text-2xl font-black shadow-xl border-b-8 border-green-800 active:translate-y-1 transition-all uppercase">🍎 Le Marché</button>
-        </div>
-
-        <div id="view-restaurant" class="hidden">
-            <div class="flex items-center p-4 bg-white sticky top-0 z-20 shadow-sm border-b">
-                <button onclick="goHome()" class="text-2xl mr-4">🏠</button>
-                <div class="flex overflow-x-auto no-scrollbar space-x-6">
-                    <button onclick="renderCat('entrees')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Entrées</button>
-                    <button onclick="renderCat('terre')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Terre</button>
-                    <button onclick="renderCat('mer')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Mer</button>
-                    <button onclick="renderCat('boissons')" class="nav-tab flex-none py-2 text-xs uppercase font-bold">Boissons</button>
+        <header class="p-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="https://i.ibb.co/m5YNt7Vv/Design-sans-titre-3.png" class="w-12 h-12 rounded-full border shadow-sm">
+                <div>
+                    <h1 class="text-lg font-extrabold text-gray-950">AGRILEC</h1>
+                    <p class="text-[10px] text-green-700 font-bold uppercase tracking-widest">Cotonou, Bénin</p>
                 </div>
             </div>
-            <div id="restaurant-items" class="p-4 space-y-4"></div>
+            <button onclick="askAdminCode()" class="w-10 h-10 glass-card flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </button>
+        </header>
+
+        <div id="admin-bar" class="hidden mx-6 mb-6 p-5 bg-gray-950 text-white rounded-[32px] shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest">Console Admin</p>
+                <button onclick="saveAllData()" class="bg-green-600 px-5 py-2 rounded-xl text-xs font-black">PUBLIER</button>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="addNewItem()" id="btn-add-item" class="hidden flex-1 py-3 border border-dashed border-white/20 rounded-xl text-[10px] font-bold">+ PRODUIT</button>
+                <button onclick="addNewPromo()" class="flex-1 py-3 border border-dashed border-white/20 rounded-xl text-[10px] font-bold">+ PROMO</button>
+            </div>
+        </div>
+
+        <div id="view-home" class="px-6 space-y-8 mt-4 animate-fadeIn">
+            <div class="text-center py-4">
+                <h2 class="text-3xl font-black text-gray-950 leading-tight">Le meilleur de la terre dans votre assiette</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-5">
+                <div onclick="showView('restaurant')" class="glass-card p-6 flex items-center gap-6 cursor-pointer hover:bg-orange-50/50 transition-all border-orange-100">
+                    <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-3xl shadow-sm">🍴</div>
+                    <div><h3 class="text-xl font-bold">Restaurant</h3><p class="text-xs text-gray-500">Plats gourmands & healthy</p></div>
+                </div>
+                <div onclick="showView('marche')" class="glass-card p-6 flex items-center gap-6 cursor-pointer border-green-100 bg-green-50/30 hover:bg-green-50">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center text-3xl shadow-sm">🧺</div>
+                    <div><h3 class="text-xl font-bold">Marché Frais</h3><p class="text-xs text-gray-500">Légumes, Fruits & Épicerie</p></div>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-6 py-4">
+                <a href="https://www.facebook.com/share/1XfdAq6CLy/?mibextid=wwXIfr" target="_blank" class="social-btn">
+                    <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <a href="https://www.tiktok.com/@agrilecbenin?_r=1&_t=ZS-94kbgLWLWmm" target="_blank" class="social-btn">
+                    <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.14 1.01.23 2.1 1.01 2.73.91.82 2.35.9 3.34.17.86-.58 1.4-1.63 1.42-2.67.03-3.92.01-7.84.02-11.76z"/></svg>
+                </a>
+                <a href="https://snapchat.com/t/oyouSmdZ" target="_blank" class="social-btn">
+                    <svg class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12zm0-22c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zM12 14c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/></svg>
+                </a>
+            </div>
+
+            <div class="p-6 bg-gray-100/50 rounded-[32px] space-y-4">
+                <div class="flex items-center gap-4 text-xs font-bold text-gray-600">
+                    <span class="text-green-600 text-lg">📍</span> 
+                    <div><p>Maro-Militaire, Cotonou</p><p class="font-medium opacity-70 italic text-[10px]">En face de la banque BIIC</p></div>
+                </div>
+                <div class="flex items-center gap-4 text-xs font-bold text-gray-600">
+                    <span class="text-green-600 text-lg">📞</span> +229 44 07 08 83
+                </div>
+            </div>
+        </div>
+
+        <div id="view-shop" class="hidden animate-fadeIn">
+            <div class="px-6 mb-4">
+                <div class="relative">
+                    <input type="text" id="search-input" oninput="searchItems()" placeholder="Rechercher un produit..." 
+                           class="w-full bg-white border border-gray-100 rounded-2xl py-4 px-12 text-sm shadow-sm focus:border-green-500 focus:outline-none">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 opacity-30"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
+                </div>
+            </div>
+
+            <div id="carousel-list" class="carousel-container"></div>
+
+            <div class="sticky-cats mt-6">
+                <div id="cat-list" class="flex overflow-x-auto gap-4 px-6 no-scrollbar"></div>
+            </div>
+
+            <div class="px-6 mt-6">
+                <div id="item-container" class="grid grid-cols-2 gap-4 pb-40"></div>
+            </div>
+        </div>
+
+        <div id="nav-bottom" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50">
+            <button onclick="goHome()" class="w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center border active:scale-90"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
+            <a href="https://wa.me/22944070883" class="w-14 h-14 bg-green-600 rounded-full shadow-2xl flex items-center justify-center active:scale-90"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></a>
+        </div>
+
+        <div id="cart-floating">
+            <div class="flex items-center gap-4">
+                <div id="cart-count" class="bg-green-600 w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm">0</div>
+                <div>
+                    <p class="text-[9px] opacity-60 uppercase font-black">Total Commande</p>
+                    <p id="cart-total" class="text-sm font-extrabold">0 FCFA</p>
+                </div>
+            </div>
+            <button onclick="sendOrder()" class="bg-white text-black px-6 py-3 rounded-2xl text-[11px] font-black italic">COMMANDER →</button>
         </div>
     </div>
 
     <script>
-        let currentCategory = 'entrees';
-        
-        // Ici, j'ai lié tes fichiers 1, 2, 3, 4, 5 aux premiers plats
-        // Tu pourras changer les noms des images (1.jpg, 2.jpg...) selon tes besoins
-        const menuData = {
-            entrees: [
-                { id: 'e1', name: 'Salade AGRILEC', price: '3000 FCFA', desc: 'Œuf de caille, légumes frais', img: 'images/1.jpg' },
-                { id: 'e2', name: 'Salade Paysanne', price: '1500 FCFA', desc: 'Fromage peulh et crudités', img: 'images/2.jpg' }
-            ],
-            terre: [
-                { id: 't1', name: 'Riz au Lapin', price: '3500 FCFA', desc: 'Spécialité maison', img: 'images/3.jpg' },
-                { id: 't2', name: 'Brochettes de Boeuf', price: '2000 FCFA', desc: 'Accompagnées de frites', img: 'images/4.jpg' }
-            ],
-            mer: [
-                { id: 'm1', name: 'Tchep Dorade', price: '3500 FCFA', desc: 'Poisson frais braisé', img: 'images/5.jpg' }
-            ],
-            boissons: [
-                { id: 'b1', name: 'Jus Naturel', price: '1500 FCFA', desc: 'Fait maison', img: 'images/6.jpg' }
-            ]
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_0-xWi51Ujxe__z08NXBbmrEO2qOFHuk",
+            authDomain: "agrilec-benin.firebaseapp.com",
+            databaseURL: "https://agrilec-benin-default-rtdb.firebaseio.com/",
+            projectId: "agrilec-benin",
+            storageBucket: "agrilec-benin.firebasestorage.app",
+            messagingSenderId: "665939906406",
+            appId: "1:665939906406:web:7a84d62a838be1b9da02a7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const IMGBB_API_KEY = '7c65b8ca213320dda457b6c2052e7f0f';
+
+        let menuData = {}, promoData = {}, currentCategory = '', cart = [], isAdmin = false, currentView = 'home';
+
+        const catStructure = {
+            marche: [{ id: 'legumes', name: 'Légumes', icon: '🥕' }, { id: 'fruits', name: 'Fruits', icon: '🍎' }, { id: 'epicerie', name: 'Épicerie', icon: '🧂' }],
+            restaurant: [{ id: 'entrees', name: 'Entrées', icon: '🥗' }, { id: 'terre', name: 'Terre', icon: '🍗' }, { id: 'mer', name: 'Mer', icon: '🐟' }, { id: 'boissons', name: 'Boissons', icon: '🥤' }]
         };
 
-        function initApp() { renderCat('entrees'); }
+        function init() {
+            // Charger Panier
+            const savedCart = localStorage.getItem('agrilec_cart');
+            if(savedCart) { cart = JSON.parse(savedCart); updateCartUI(); }
 
-        function renderCat(cat) {
-            currentCategory = cat;
-            const container = document.getElementById('restaurant-items');
-            container.innerHTML = '';
-            document.querySelectorAll('.nav-tab').forEach(t => {
-                t.classList.remove('active-tab');
-                if(t.innerText.toLowerCase().includes(cat.substring(0,3))) t.classList.add('active-tab');
+            database.ref('menu_agrilec').on('value', snap => { 
+                menuData = snap.val() || {}; 
+                if(currentCategory) renderItems(currentCategory); 
             });
-            menuData[cat].forEach(item => {
-                container.innerHTML += `
-                    <div class="flex bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm menu-card">
-                        <div class="w-1/3 h-28 img-box">
-                            <img src="${item.img}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=Agrilec'">
-                        </div>
-                        <div class="w-2/3 p-4 flex flex-col justify-between">
-                            <h3 class="font-bold text-gray-800 text-sm">${item.name}</h3>
-                            <p class="text-[9px] text-gray-400">${item.desc}</p>
-                            <div class="flex justify-between items-center">
-                                <span class="text-orange-600 font-black text-xs">${item.price}</span>
-                                <button onclick="order('${item.name}')" class="bg-green-700 text-white px-3 py-1 rounded-full text-[10px] font-bold">Commander</button>
-                            </div>
-                        </div>
-                    </div>`;
+
+            database.ref('promos_sections_v2').on('value', snap => { 
+                promoData = snap.val() || { restaurant: [], marche: [] }; 
+                if(currentView !== 'home') renderPromos();
             });
         }
 
-        function showRestaurant() { document.getElementById('view-home').classList.add('hidden'); document.getElementById('view-restaurant').classList.remove('hidden'); }
-        function showMarche() { alert("Le marché arrive bientôt !"); }
-        function goHome() { location.reload(); }
-        function order(n) { window.location.href = "https://wa.me/22944070883?text=Je commande : " + n; }
+        function showView(view) {
+            currentView = view;
+            currentCategory = catStructure[view][0].id;
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-shop').classList.remove('hidden');
+            document.getElementById('nav-bottom').classList.remove('hidden');
+            if(isAdmin) document.getElementById('btn-add-item').classList.remove('hidden');
+            renderCategories(view);
+            renderPromos();
+            renderItems(currentCategory);
+            window.scrollTo(0,0);
+        }
+
+        function goHome() {
+            currentView = 'home';
+            document.getElementById('view-home').classList.remove('hidden');
+            document.getElementById('view-shop').classList.add('hidden');
+            document.getElementById('nav-bottom').classList.add('hidden');
+        }
+
+        function renderCategories(view) {
+            document.getElementById('cat-list').innerHTML = catStructure[view].map(cat => `
+                <div onclick="switchCat('${cat.id}')" class="cat-bubble ${currentCategory === cat.id ? 'active-cat' : ''}">
+                    <div class="cat-icon">${cat.icon}</div><span class="text-[11px] font-medium text-gray-500">${cat.name}</span>
+                </div>`).join('');
+        }
+
+        function switchCat(id) { 
+            document.getElementById('search-input').value = '';
+            currentCategory = id; 
+            renderCategories(currentView); 
+            renderItems(id);
+        }
+
+        function renderItems(cat) {
+            const container = document.getElementById('item-container');
+            container.innerHTML = '';
+            if(menuData[cat]) menuData[cat].forEach(item => renderSingleItem(cat, item));
+        }
+
+        function renderSingleItem(cat, item) {
+            const container = document.getElementById('item-container');
+            container.innerHTML += `
+                <div class="glass-card p-4 relative flex flex-col animate-fadeIn">
+                    <div class="w-full h-24 mb-4 flex items-center justify-center">
+                        <img src="${item.imgUrl || 'https://cdn-icons-png.flaticon.com/512/3595/3595455.png'}" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <h3 class="text-xs font-bold text-gray-900" ${isAdmin ? `contenteditable="true" onblur="updateVal('${cat}','${item.id}','name',this.innerText)"` : ''}>${item.name}</h3>
+                    <p class="text-[9px] text-gray-400 mt-1 mb-4">${item.desc || 'Qualité Agrilec'}</p>
+                    <div class="flex justify-between items-center mt-auto">
+                        <span class="font-black text-sm">${item.price}</span>
+                        <button onclick="addToCart('${item.name}', '${item.price}')" class="bg-green-600 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-lg active:scale-90"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg></button>
+                    </div>
+                    ${isAdmin ? `<div class="absolute -top-2 -right-2 flex flex-col gap-2"><button onclick="deleteItem('${cat}','${item.id}')" class="bg-red-500 text-white w-7 h-7 rounded-full text-xs shadow-md">✕</button><label class="bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center cursor-pointer shadow-md"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" class="hidden" onchange="uploadImg(event, '${cat}', '${item.id}')"></label></div>` : ''}
+                </div>`;
+        }
+
+        function addToCart(name, priceStr) {
+            const price = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+            const existing = cart.find(i => i.name === name);
+            if(existing) { existing.qty++; } else { cart.push({ name, price, qty: 1 }); }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const count = cart.reduce((sum, item) => sum + item.qty, 0);
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-total').innerText = total.toLocaleString() + " FCFA";
+            if(count > 0) document.getElementById('cart-floating').classList.add('show');
+            localStorage.setItem('agrilec_cart', JSON.stringify(cart));
+        }
+
+        function sendOrder() {
+            if(cart.length === 0) return;
+            let message = "🌿 *NOUVELLE COMMANDE AGRILEC* 🌿\n\n";
+            cart.forEach(item => { message += `• ${item.name} (x${item.qty}) : ${item.price * item.qty} FCFA\n`; });
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            message += `\n💰 *TOTAL : ${total.toLocaleString()} FCFA*`;
+            window.location.href = `https://wa.me/22944070883?text=${encodeURIComponent(message)}`;
+            cart = []; updateCartUI(); document.getElementById('cart-floating').classList.remove('show');
+        }
+
+        function renderPromos() {
+            const container = document.getElementById('carousel-list');
+            const items = promoData[currentView] || [];
+            if(!container || items.length === 0) { container.innerHTML = ""; return; }
+            container.innerHTML = items.map((p, i) => `
+                <div class="carousel-item shadow-lg" style="background: ${p.bg}">
+                    <p class="text-[10px] font-bold opacity-80 uppercase tracking-widest">${p.sub}</p>
+                    <h3 class="text-xl font-black mt-1">${p.title}</h3>
+                    <p class="text-xs mt-2 opacity-90">${p.desc}</p>
+                    ${isAdmin ? `<button onclick="deletePromo('${i}')" class="absolute top-2 right-2 bg-black/20 w-6 h-6 rounded-full text-[10px]">✕</button>` : ''}
+                </div>`).join('');
+        }
+
+        function searchItems() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const container = document.getElementById('item-container');
+            container.innerHTML = '';
+            catStructure[currentView].forEach(cObj => {
+                if(menuData[cObj.id]) {
+                    menuData[cObj.id].forEach(item => {
+                        if(item.name.toLowerCase().includes(query)) renderSingleItem(cObj.id, item);
+                    });
+                }
+            });
+        }
+
+        // ADMIN FUNCTIONS
+        function askAdminCode() { if(prompt("Code :") === "AGRILECBJ") { isAdmin = true; document.getElementById('admin-bar').classList.remove('hidden'); if(currentCategory) renderItems(currentCategory); renderPromos(); } }
+        function saveAllData() { database.ref('menu_agrilec').set(menuData); database.ref('promos_sections_v2').set(promoData).then(() => alert("✅ Publié avec succès !")); }
+        function addNewItem() { if(!menuData[currentCategory]) menuData[currentCategory] = []; menuData[currentCategory].unshift({ id: 'id_'+Date.now(), name: 'Nouveau', price: '0 FCFA', desc: '', imgUrl: '' }); renderItems(currentCategory); }
+        function deleteItem(c, i) { if(confirm("Supprimer ?")) { menuData[c] = menuData[c].filter(x => x.id !== i); renderItems(c); } }
+        function updateVal(c, i, f, v) { const it = menuData[c].find(x => x.id === i); if(it) it[f] = v; }
+        
+        async function uploadImg(e, c, i) {
+            const f = e.target.files[0]; const b = new FormData(); b.append('image', f);
+            const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: b });
+            const d = await r.json(); if(d.success) { menuData[c].find(x => x.id === i).imgUrl = d.data.url; renderItems(c); }
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
+// Enregistrement du Service Worker pour la PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+    .then(() => console.log("PWA Agrilec prête !"))
+    .catch(err => console.log("Erreur PWA", err));
+}
